@@ -23,10 +23,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run checker
+        - name: Run checker
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISNEY_AUTH_TOKEN: ${{ secrets.DISNEY_AUTH_TOKEN }}
         run: python checker.py
 
       - name: Commit updated state (if changed)
