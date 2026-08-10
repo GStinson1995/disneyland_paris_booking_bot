@@ -97,7 +97,12 @@ def check_availability(restaurant_id: str, date: str):
         json=body,
         timeout=20,
     )
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        # Surface the actual response body (truncated) so failures are
+        # diagnosable from the Actions log instead of just "400 Bad Request".
+        raise RuntimeError(
+            f"{resp.status_code} {resp.reason} - body: {resp.text[:500]!r}"
+        )
     return resp.json()
 
 
