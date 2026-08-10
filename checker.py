@@ -14,7 +14,7 @@ so we only notify on *new* availability, not on every single run.
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -37,6 +37,7 @@ RESTAURANTS = {
 DATES = ["2026-10-07", "2026-10-08", "2026-10-09"]
 PARTY_MIX = 3  # 2 adults + 1 child, matches the on-file booking
 MEAL_PERIODS_OF_INTEREST = {"Lunch", "Dinner"}
+HEARTBEAT_INTERVAL_HOURS = 24  # send a "still running" ping this often
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
 
@@ -188,8 +189,23 @@ def main():
         )
         state["blocked_notified"] = True
 
+    now = datetime.now(timezone.utc)
+
+    # Decide whether a daily "still alive" heartbeat is due, so silence
+    # can't be mistaken for "it's broken and nobody noticed."
+    last_heartbeat_str = state.get("last_heartbeat")
+    send_heartbeat = True
+    if last_heartbeat_str:
+        try:
+            last_heartbeat = datetime.fromisoformat(last_heartbeat_str)
+            send_heartbeat = (now - last_heartbeat) >= timedelta(hours=HEARTBEAT_INTERVAL_HOURS)
+        except ValueError:
+            send_heartbeat = True
+
     state["slots"] = new_slot_state
-    state["last_run"] = datetime.now(timezone.utc).isoformat()
+    state["last_run"] = now.isoformat()
+    if send_heartbeat:
+        state["last_heartbeat"] = now.isoformat()
     save_state(state)
 
     if newly_available:
@@ -202,6 +218,15 @@ def main():
         message = "\n".join(lines)
         send_telegram(message)
         print("Sent notification for:", newly_available)
+    elif send_heartbeat:
+        ok_count = total_checks - len(errors)
+        status = "✅ all checks OK" if ok_count == total_checks else f"⚠️ only {ok_count}/{total_checks} checks OK"
+        send_telegram(
+            "👋 <b>DLP table checker heartbeat</b> — still running.\n"
+            f"{status}, last checked {now.strftime('%d %b %Y %H:%M UTC')}.\n"
+            "No new availability yet."
+        )
+        print("Sent daily heartbeat.")
     else:
         print(f"No new availability. {len(errors)}/{total_checks} checks failed.")
         if errors:
