@@ -106,8 +106,6 @@ def check_availability(restaurant_id: str, date: str):
         timeout=20,
     )
     if resp.status_code != 200:
-        # Surface the actual response body (truncated) so failures are
-        # diagnosable from the Actions log instead of just "400 Bad Request".
         raise RuntimeError(
             f"{resp.status_code} {resp.reason} - body: {resp.text[:500]!r}"
         )
@@ -167,8 +165,6 @@ def main():
     total_checks = len(RESTAURANTS) * len(DATES)
     all_failed = len(errors) == total_checks
 
-    # Track consecutive total failures so we alert once on "looks blocked"
-    # rather than every 15 minutes.
     if all_failed:
         state["consecutive_failures"] = state.get("consecutive_failures", 0) + 1
     else:
@@ -191,8 +187,6 @@ def main():
 
     now = datetime.now(timezone.utc)
 
-    # Decide whether a daily "still alive" heartbeat is due, so silence
-    # can't be mistaken for "it's broken and nobody noticed."
     last_heartbeat_str = state.get("last_heartbeat")
     send_heartbeat = True
     if last_heartbeat_str:
@@ -208,6 +202,11 @@ def main():
         state["last_heartbeat"] = now.isoformat()
     save_state(state)
 
+    if errors:
+        print(f"{len(errors)}/{total_checks} checks failed. Errors:")
+        for err in errors:
+            print(" -", err)
+
     if newly_available:
         lines = ["🎉 <b>A Disneyland Paris table just opened up!</b>"]
         for name, date, slots in newly_available:
@@ -221,19 +220,19 @@ def main():
     elif send_heartbeat:
         ok_count = total_checks - len(errors)
         status = "✅ all checks OK" if ok_count == total_checks else f"⚠️ only {ok_count}/{total_checks} checks OK"
-        send_telegram(
-            "👋 <b>DLP table checker heartbeat</b> — still running.\n"
-            f"{status}, last checked {now.strftime('%d %b %Y %H:%M UTC')}.\n"
-            "No new availability yet."
-        )
+        heartbeat_lines = [
+            "👋 <b>DLP table checker heartbeat</b> — still running.",
+            f"{status}, last checked {now.strftime('%d %b %Y %H:%M UTC')}.",
+        ]
+        if errors:
+            heartbeat_lines.append("\nSample error:\n" + errors[0][:300])
+        else:
+            heartbeat_lines.append("No new availability yet.")
+        send_telegram("\n".join(heartbeat_lines))
         print("Sent daily heartbeat.")
     else:
         print(f"No new availability. {len(errors)}/{total_checks} checks failed.")
-        if errors:
-            print("Errors:", errors)
 
-    # Non-zero exit on total failure makes it easy to spot in the Actions
-    # tab, without needing to read logs.
     if all_failed:
         sys.exit(1)
 
