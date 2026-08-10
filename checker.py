@@ -21,6 +21,12 @@ import requests
 API_URL = "https://dlp-is-sales-drs-book-dine.wdprapps.disney.com/prod/v4/book-dine/availabilities/en-gb"
 API_KEY = "AaQHDoRgDa66dl2PQuTEe9DjyBlH8ylV4LxnldFY"
 
+# This is a real session token, not the static public API key - it expires
+# periodically and has to be re-captured from a live browser session (see
+# README.md). Read from an env var / GitHub secret rather than hardcoded,
+# since unlike API_KEY this one is tied to an actual account session.
+DISNEY_AUTH_TOKEN = os.environ.get("DISNEY_AUTH_TOKEN", "")
+
 # restaurantId -> friendly name
 RESTAURANTS = {
     "P2TR02": "Bistrot Chez Rémy",
@@ -37,6 +43,7 @@ STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.jso
 HEADERS = {
     "accept": "application/json, text/plain, */*",
     "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+    "authorization": f"Bearer {DISNEY_AUTH_TOKEN}",
     "content-type": "application/json",
     "origin": "https://bookrestaurants.disneylandparis.com",
     "referer": "https://bookrestaurants.disneylandparis.com/",
@@ -122,6 +129,14 @@ def extract_available_slots(data, meal_periods_of_interest=MEAL_PERIODS_OF_INTER
 
 
 def main():
+    if not DISNEY_AUTH_TOKEN:
+        print(
+            "DISNEY_AUTH_TOKEN is not set (repository secret missing or empty) - "
+            "every check would fail with 'Missing required request parameters: "
+            "[Authorization]'. Set the DISNEY_AUTH_TOKEN secret and re-run."
+        )
+        sys.exit(1)
+
     state = load_state()
     slot_state = state.get("slots", {})
     new_slot_state = {}
