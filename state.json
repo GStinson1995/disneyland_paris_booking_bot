@@ -1,8 +1,8 @@
 {
   "blocked_notified": true,
-  "consecutive_failures": 7,
+  "consecutive_failures": 8,
   "last_heartbeat": "2026-08-11T20:05:44.219812+00:00",
-  "last_run": "2026-08-11T21:48:37.199575+00:00",
+  "last_run": "2026-08-11T22:26:02.315324+00:00",
   "slots": {
     "H02R04|2026-10-07": [],
     "H02R04|2026-10-08": [],
