@@ -2,7 +2,7 @@
   "blocked_notified": false,
   "consecutive_failures": 0,
   "last_heartbeat": "2026-08-11T20:05:44.219812+00:00",
-  "last_run": "2026-08-11T20:22:56.313453+00:00",
+  "last_run": "2026-08-11T20:34:07.065802+00:00",
   "slots": {
     "H02R04|2026-10-07": [],
     "H02R04|2026-10-08": [],
@@ -24,7 +24,6 @@
       "Dinner 08:15 PM",
       "Dinner 08:30 PM",
       "Dinner 08:45 PM",
-      "Lunch 03:15 PM",
       "Lunch 03:30 PM",
       "Lunch 03:45 PM",
       "Lunch 04:00 PM",
@@ -61,7 +60,8 @@
       "Lunch 05:00 PM",
       "Lunch 05:15 PM",
       "Lunch 11:30 AM",
-      "Lunch 11:45 AM"
+      "Lunch 11:45 AM",
+      "Lunch 12:15 PM"
     ],
     "P2TR02|2026-10-09": [
       "Dinner 05:30 PM",
